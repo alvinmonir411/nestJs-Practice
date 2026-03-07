@@ -38,21 +38,15 @@ const result = await this.userRepo.findOne(
   }
  const match = await bcrypt.compare(data.password, result.password);
 
-    if(match) {
-        //login
-    }
-
-
-
-
-
-console.log(result)
-
-return{
-  massage:"Login Succesfully",
-  data:result
-}
+    if(!match) {
+     throw new UnauthorizedException("Password is not match ");
   }
 
-  
+
+   return{
+     massage:"Login Succesfully",
+     data:result
+     }
+    }
+
 }
