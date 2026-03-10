@@ -1,54 +1,79 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UserService } from 'src/user/user.service';
 import { registerDTO } from './DTO/register.dto';
-import * as bcrypt from "bcrypt";
+import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { Login } from './DTO/Login.dto';
 
 @Injectable()
 export class AuthService {
+  constructor(
+    private readonly userService: UserService,
+    private readonly jwtService: JwtService,
+  ) {}
 
-constructor(
-    private readonly userservice: UserService,
-    private readonly jwtService: JwtService
-){}
+  async createUser(userData: registerDTO) {
+    const existingUser = await this.userService.findByEmail(userData.email);
 
-async creatuser(userData: registerDTO){
+    if (existingUser) {
+      throw new BadRequestException('Email already exists');
+    }
 
-    // hash password
-    const hashedPassword = await bcrypt.hash(userData.password,10)
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-    // jwt payload
+    const newUser = await this.userService.createUser({
+      ...userData,
+      password: hashedPassword,
+    });
+
     const payload = {
-        email: userData.email
+      sub: newUser.id,
+      email: newUser.email,
+      role:newUser.role
+    };
+
+    const token = await this.jwtService.signAsync(payload);
+
+    const { password, ...userWithoutPassword } = newUser;
+
+    return {
+      message: 'User created successfully',
+      data: userWithoutPassword,
+      access_token: token,
+    };
+  }
+
+  async loginUser(userData: Login) {
+    const user = await this.userService.findByEmail(userData.email);
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
     }
 
-    // generate token
-    const token = await this.jwtService.signAsync(payload)
+    const isMatch = await bcrypt.compare(userData.password, user.password);
 
-    const user = {
-        ...userData,
-        password: hashedPassword
+    if (!isMatch) {
+      throw new UnauthorizedException('Password does not match');
     }
 
-    return await this.userservice.creatUser(user,token)
-
-}
-
-async loginuser(userdata:Login){
- // jwt payload
     const payload = {
-        email: userdata.email
-    }
-   // generate token
-    const token = await this.jwtService.signAsync(payload)
+      sub: user.id,
+      email: user.email,
+      role:user.role
+    };
 
-    const user = {
-        ...userdata,
-        token
-    }
-    return this.userservice.loginUser(user)
-}
- 
+    const token = await this.jwtService.signAsync(payload);
 
+    const { password, ...userWithoutPassword } = user;
+
+    return {
+      message: 'Login successfully',
+      data: userWithoutPassword,
+      access_token: token,
+    };
+  }
 }

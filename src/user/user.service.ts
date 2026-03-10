@@ -1,10 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { registerDTO } from 'src/auth/DTO/register.dto';
 import { User } from './user.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Login } from 'src/auth/DTO/Login.dto';
-import * as bcrypt from "bcrypt";
+
 @Injectable()
 export class UserService {
   constructor(
@@ -12,41 +11,14 @@ export class UserService {
     private userRepo: Repository<User>,
   ) {}
 
-  async creatUser(userData: registerDTO,token:string) {
-
+  async createUser(userData:registerDTO) {
     const user = this.userRepo.create(userData);
-    const savedUser = await this.userRepo.save(user);
-
-    return {
-      message: "User Created Succesfully",
-      data: savedUser,
-      acces_toekn:token
-    }
+    return await this.userRepo.save(user);
   }
 
-async loginUser(data:Login){
-
-const result = await this.userRepo.findOne(
-  {
-    where:{
-      email:data.email
-    }
+  async findByEmail(email: string) {
+    return await this.userRepo.findOne({
+      where: { email },
+    });
   }
-)
- if (!result) {
-    throw new UnauthorizedException("User not found");
-  }
- const match = await bcrypt.compare(data.password, result.password);
-
-    if(!match) {
-     throw new UnauthorizedException("Password is not match ");
-  }
-
-
-   return{
-     massage:"Login Succesfully",
-     data:result
-     }
-    }
-
 }
