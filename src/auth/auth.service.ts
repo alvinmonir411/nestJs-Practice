@@ -76,4 +76,22 @@ export class AuthService {
       access_token: token,
     };
   }
+
+
+  async getalluser(){
+    const user = await this.userService.allUser()
+    return  {
+      message: 'All user list ',
+      data: user,
+    };
+  }
+
+  async deletuser(email:string){
+    const deletuser= await this.userService.DeletUser(email)
+      return  {
+      message: 'user deleted succesfully ',
+     affected: deletuser.affected
+    };
+  }
+
 }
