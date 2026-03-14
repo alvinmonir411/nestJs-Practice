@@ -86,6 +86,8 @@ export class AuthService {
     };
   }
 
+
+
   async deletuser(email:string){
     const deletuser= await this.userService.DeletUser(email)
       return  {
